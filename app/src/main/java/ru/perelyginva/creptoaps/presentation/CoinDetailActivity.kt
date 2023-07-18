@@ -4,11 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.ViewModelProvider
-import com.squareup.picasso.Picasso
 import ru.perelyginva.creptoaps.R
 import ru.perelyginva.creptoaps.databinding.ActivityCoinDetailBinding
-import ru.perelyginva.creptoaps.databinding.FragmentCoinDetailBinding
 
 class CoinDetailActivity : AppCompatActivity() {
 
