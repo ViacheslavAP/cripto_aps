@@ -3,19 +3,20 @@ package ru.perelyginva.creptoaps.data.repository
 import android.app.Application
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Transformations
+import androidx.work.ExistingWorkPolicy
+import androidx.work.WorkManager
 import ru.perelyginva.creptoaps.data.database.AppDatabase
 import ru.perelyginva.creptoaps.data.mapper.CoinMapper
-import ru.perelyginva.creptoaps.data.network.ApiFactory
 import ru.perelyginva.creptoaps.domain.CoinInfo
 import ru.perelyginva.creptoaps.domain.CoinRepository
-import kotlinx.coroutines.delay
+import ru.perelyginva.creptoaps.workers.RefreshDataWorker.Companion.NAME
+import ru.perelyginva.creptoaps.workers.RefreshDataWorker.Companion.makeRequest
 
 class CoinRepositoryImpl(
-    private val application: Application) : CoinRepository {
+    private val application: Application,
+) : CoinRepository {
 
     private val coinInfoDao = AppDatabase.getInstance(application).coinPriceInfoDao()
-    private val apiService = ApiFactory.apiService
-
     private val mapper = CoinMapper()
 
     override fun getCoinInfoList(): LiveData<List<CoinInfo>> {
@@ -32,18 +33,12 @@ class CoinRepositoryImpl(
         }
     }
 
-    override suspend fun loadData() {
-        while (true) {
-            try {
-                val topCoins = apiService.getTopCoinsInfo(limit = 50)
-                val fSyms = mapper.mapNamesListToString(topCoins)
-                val jsonContainer = apiService.getFullPriceList(fSyms = fSyms)
-                val coinInfoDtoList = mapper.mapJsonContainerToListCoinInfo(jsonContainer)
-                val dbModelList = coinInfoDtoList.map { mapper.mapDtoToDbModel(it) }
-                coinInfoDao.insertPriceList(dbModelList)
-            } catch (e: Exception) {
-            }
-            delay(10000)
-        }
+    override fun loadData() {
+        val workManager = WorkManager.getInstance(application)
+        workManager.enqueueUniqueWork(
+            NAME,
+        ExistingWorkPolicy.REPLACE,
+        makeRequest()
+        )
     }
 }
